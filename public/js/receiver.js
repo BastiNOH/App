@@ -80,7 +80,7 @@
     history.unshift(payload);
     countText.textContent = String(history.length);
     renderHistory();
-    typeIntoTarget(payload.text);
+    enqueueScan(payload.text);
   });
 
   function renderHistory() {
@@ -97,10 +97,54 @@
     return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
-  function typeIntoTarget(text) {
-    targetInput.value = text;
+  // Puffer/Warteschlange: mehrere schnell hintereinander eintreffende Scans
+  // werden nicht gleichzeitig ins Feld geschrieben, sondern nacheinander mit
+  // echten Tastatur-Events "getippt" – so entsteht kein Spam/Ueberschreiben,
+  // auch wenn mehrere Codes kurz hintereinander gescannt werden.
+  const scanQueue = [];
+  let queueRunning = false;
+  const CHAR_TYPE_DELAY_MS = 12;
+  const GAP_BETWEEN_SCANS_MS = 250;
+
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+
+  function setNativeValue(el, value) {
+    nativeInputValueSetter.call(el, value);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  function enqueueScan(text) {
+    scanQueue.push(text);
+    runQueue();
+  }
+
+  async function runQueue() {
+    if (queueRunning) return;
+    queueRunning = true;
+    while (scanQueue.length) {
+      const text = scanQueue.shift();
+      await typeIntoTarget(text);
+      await sleep(GAP_BETWEEN_SCANS_MS);
+    }
+    queueRunning = false;
+  }
+
+  async function typeIntoTarget(text) {
+    setNativeValue(targetInput, '');
+    for (const char of text) {
+      targetInput.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
+      setNativeValue(targetInput, targetInput.value + char);
+      targetInput.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
+      await sleep(CHAR_TYPE_DELAY_MS);
+    }
+
     targetInput.classList.add('result-flash');
     setTimeout(() => targetInput.classList.remove('result-flash'), 650);
+
     if (autoEnter.checked) {
       targetInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       targetInput.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));

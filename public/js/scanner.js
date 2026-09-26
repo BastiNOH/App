@@ -15,9 +15,14 @@
   let socket = null;
   let html5Qr = null;
   let sent = 0;
+
+  // Anti-Spam-Puffer: verhindert, dass derselbe Code mehrfach pro Sekunde
+  // gesendet wird, waehrend das Handy ruhig ueber dem Barcode gehalten wird.
   let lastText = null;
-  let lastTime = 0;
-  const DEDUPE_MS = 1500;
+  let lastSentAt = 0;
+  let missCount = 0;
+  const MIN_COOLDOWN_MS = 800; // Mindestabstand, bevor derselbe Code erneut zaehlt
+  const CLEAR_AFTER_MISSES = 4; // so viele Frames ohne Erkennung = Code "aus dem Bild"
 
   function connectAndJoin(code) {
     joinCard.style.display = 'none';
@@ -75,17 +80,31 @@
     };
 
     html5Qr
-      .start({ facingMode: 'environment' }, config, onScanSuccess, () => {})
+      .start({ facingMode: 'environment' }, config, onScanSuccess, onScanFailure)
       .catch((err) => {
         connText.textContent = `Kamera-Fehler: ${err}`;
       });
   }
 
+  // Wird pro Kamera-Frame ohne erkannten Code aufgerufen. Sobald der Barcode
+  // eine Weile nicht mehr im Bild war, gilt er als "verlassen" und darf beim
+  // naechsten Erkennen sofort wieder gesendet werden (z. B. gleicher Artikel
+  // zweimal hintereinander).
+  function onScanFailure() {
+    missCount += 1;
+    if (missCount >= CLEAR_AFTER_MISSES) {
+      lastText = null;
+    }
+  }
+
   function onScanSuccess(decodedText, result) {
+    missCount = 0;
     const now = Date.now();
-    if (decodedText === lastText && now - lastTime < DEDUPE_MS) return;
+    const sameCodeStillInView = decodedText === lastText && now - lastSentAt < MIN_COOLDOWN_MS;
+    if (sameCodeStillInView) return;
+
     lastText = decodedText;
-    lastTime = now;
+    lastSentAt = now;
 
     const format = result?.result?.format?.formatName || 'UNKNOWN';
     socket.emit('barcode', { text: decodedText, format });

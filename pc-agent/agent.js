@@ -58,17 +58,35 @@ async function main() {
     console.log(`Status: ${status.scanners} Handy(s), ${status.receivers} Empfaenger verbunden.`);
   });
 
-  socket.on('barcode', async (payload) => {
-    console.log(`Scan empfangen: ${payload.text} (${payload.format})`);
-    try {
-      await keyboard.type(payload.text);
-      if (args.enter) {
-        await keyboard.pressKey(Key.Enter);
-        await keyboard.releaseKey(Key.Enter);
+  // Puffer: Scans werden nacheinander abgearbeitet, damit sich bei schnell
+  // aufeinanderfolgenden Codes die Tastatureingaben nicht ueberschneiden.
+  const queue = [];
+  let processing = false;
+
+  async function processQueue() {
+    if (processing) return;
+    processing = true;
+    while (queue.length) {
+      const payload = queue.shift();
+      console.log(`Tippe Scan: ${payload.text} (${payload.format})`);
+      try {
+        await keyboard.type(payload.text);
+        if (args.enter) {
+          await keyboard.pressKey(Key.Enter);
+          await keyboard.releaseKey(Key.Enter);
+        }
+      } catch (err) {
+        console.error('Tastatureingabe fehlgeschlagen:', err.message);
       }
-    } catch (err) {
-      console.error('Tastatureingabe fehlgeschlagen:', err.message);
+      await new Promise((resolve) => setTimeout(resolve, 150));
     }
+    processing = false;
+  }
+
+  socket.on('barcode', (payload) => {
+    console.log(`Scan empfangen: ${payload.text} (${payload.format})`);
+    queue.push(payload);
+    processQueue();
   });
 
   socket.on('disconnect', () => {
