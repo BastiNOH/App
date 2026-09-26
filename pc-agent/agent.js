@@ -29,9 +29,9 @@ async function main() {
 
   let keyboard, Key;
   try {
-    ({ keyboard, Key } = require('@nut-tree/nut-js'));
+    ({ keyboard, Key } = require('@nut-tree-fork/nut-js'));
   } catch (err) {
-    console.error('Konnte @nut-tree/nut-js nicht laden. Bitte im pc-agent Verzeichnis "npm install" ausfuehren.');
+    console.error('Konnte @nut-tree-fork/nut-js nicht laden. Bitte im pc-agent Verzeichnis "npm install" ausfuehren.');
     console.error(err.message);
     process.exit(1);
   }
