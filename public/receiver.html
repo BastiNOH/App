@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Barcode Bridge – PC Empfänger</title>
+<link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+<div class="wrap">
+  <h1>Barcode Bridge – Empfänger</h1>
+  <div class="sub">Scanne den Code unten mit deinem Handy, um es als Barcode-Scanner zu koppeln.</div>
+
+  <div class="card">
+    <div class="status-row">
+      <span class="dot" id="dotConn"></span>
+      <span id="connText">Verbinde mit Server…</span>
+    </div>
+    <div class="status-row">
+      <span class="dot" id="dotPhone"></span>
+      <span id="phoneText">Kein Handy verbunden</span>
+    </div>
+
+    <div class="qr-box">
+      <img id="qrImg" alt="QR-Code zum Koppeln" width="220" height="220" />
+      <div class="code" id="roomCode">------</div>
+      <div class="hint">Oder öffne <span id="scanUrlText">…</span> auf dem Handy und gib den Code ein.</div>
+      <button class="secondary" id="newRoomBtn">Neuen Code erzeugen</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="targetInput">Ziel-Eingabefeld (empfangene Codes landen hier, wie bei einem echten Scanner)</label>
+      <input type="text" id="targetInput" placeholder="Hier erscheinen gescannte Codes…" autocomplete="off" />
+    </div>
+    <div class="row">
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);">
+        <input type="checkbox" id="autoEnter" checked style="width:auto;" /> Enter-Taste nach jedem Scan simulieren
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="top-actions">
+      <strong>Verlauf (<span id="countText">0</span>)</strong>
+      <div class="row" style="flex:none;">
+        <button class="ghost" id="copyLastBtn">Letzten kopieren</button>
+        <button class="ghost" id="clearBtn">Leeren</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Zeit</th><th>Wert</th><th>Format</th></tr></thead>
+      <tbody id="logBody"></tbody>
+    </table>
+  </div>
+
+  <div class="hint">
+    Für systemweites Eintippen in jede beliebige Anwendung (statt nur in dieses Feld) kann optional der
+    <code>pc-agent</code> aus dem Projekt-Repo lokal gestartet werden. Details siehe README.
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/receiver.js"></script>
+</body>
+</html>

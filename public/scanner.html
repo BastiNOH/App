@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Barcode Bridge – Scanner</title>
+<link rel="stylesheet" href="/css/app.css" />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0f1420" />
+</head>
+<body>
+<div class="wrap">
+  <h1>Barcode Bridge – Scanner</h1>
+  <div class="sub">Dieses Handy scannt Barcodes und sendet sie live an deinen PC.</div>
+
+  <div class="card" id="joinCard">
+    <div class="field">
+      <label for="codeInput">Code vom PC-Bildschirm eingeben</label>
+      <input type="text" id="codeInput" maxlength="6" placeholder="z. B. AB12CD" autocomplete="off" autocapitalize="characters" />
+    </div>
+    <button id="joinBtn">Verbinden</button>
+  </div>
+
+  <div class="card" id="scanCard" style="display:none;">
+    <div class="status-row">
+      <span class="dot" id="dotConn"></span>
+      <span id="connText">Verbinde…</span>
+    </div>
+    <div id="reader"></div>
+    <div class="scan-log" id="lastScan">Noch kein Scan.</div>
+    <div class="big-count" id="sentCount">0</div>
+    <div class="hint" style="text-align:center;">gesendete Scans</div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/vendor/html5-qrcode.min.js"></script>
+<script src="/js/scanner.js"></script>
+</body>
+</html>

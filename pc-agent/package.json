@@ -1,0 +1,14 @@
+{
+  "name": "barcode-bridge-pc-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Optionaler PC-Agent: tippt gescannte Barcodes systemweit in die aktive Anwendung (wie ein echter USB-Scanner).",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.5",
+    "@nut-tree/nut-js": "^3.1.2"
+  }
+}

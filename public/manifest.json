@@ -1,0 +1,9 @@
+{
+  "name": "Barcode Bridge Scanner",
+  "short_name": "Barcode Bridge",
+  "start_url": "/scanner",
+  "display": "standalone",
+  "background_color": "#0f1420",
+  "theme_color": "#0f1420",
+  "icons": []
+}

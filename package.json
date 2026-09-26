@@ -1,0 +1,25 @@
+{
+  "name": "barcode-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Handy-Kamera als Barcode-Scanner fuer den PC (Web-Bruecke ueber WLAN)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "node server/test/relay.test.js"
+  },
+  "dependencies": {
+    "express": "^4.22.3",
+    "html5-qrcode": "^2.3.8",
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "socket.io": "^4.8.4"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
