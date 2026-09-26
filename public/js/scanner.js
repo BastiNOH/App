@@ -7,6 +7,7 @@
   const connText = document.getElementById('connText');
   const lastScan = document.getElementById('lastScan');
   const sentCount = document.getElementById('sentCount');
+  const flashOverlay = document.getElementById('flashOverlay');
 
   const params = new URLSearchParams(location.search);
   const prefillRoom = (params.get('room') || '').toUpperCase();
@@ -103,6 +104,13 @@
     lastScan.textContent = `${decodedText} (${format})`;
 
     if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    playBeep();
+
+    flashOverlay.classList.remove('flash');
+    // reflow erzwingen, damit die Animation bei schnell aufeinanderfolgenden
+    // Scans jedes Mal neu abspielt
+    void flashOverlay.offsetWidth;
+    flashOverlay.classList.add('flash');
 
     document.getElementById('reader').classList.add('scan-pause');
     setTimeout(() => {
@@ -110,12 +118,47 @@
     }, SCAN_PAUSE_MS);
   }
 
+  // Vibration wird von manchen mobilen Browsern (v. a. neuere Chrome-Versionen)
+  // nur noch direkt aus einer Nutzer-Geste erlaubt, nicht aus einem
+  // asynchronen Kamera-Callback - daher als zuverlaessigeres Feedback
+  // zusaetzlich ein kurzer Piepton per Web Audio API. Der AudioContext wird
+  // erst beim "Verbinden"-Tap erzeugt (das ist eine echte Nutzer-Geste),
+  // damit der Ton auf dem Handy nicht stummgeschaltet/blockiert wird.
+  let audioCtx = null;
+
+  function playBeep() {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.12);
+  }
+
+  function unlockAudio() {
+    if (audioCtx) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    audioCtx = new AudioContextClass();
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  }
+  // Falls die Seite per QR-Code direkt geoeffnet wird (ohne Tap auf
+  // "Verbinden"), wird der Ton beim ersten Antippen des Bildschirms
+  // entsperrt - vorher blockieren Browser Audio ohne Nutzer-Geste.
+  document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+  document.addEventListener('click', unlockAudio, { once: true });
+
   joinBtn.addEventListener('click', () => {
     const code = codeInput.value.trim().toUpperCase();
     if (!/^[A-Z0-9]{4,8}$/.test(code)) {
       codeInput.focus();
       return;
     }
+    unlockAudio();
     connectAndJoin(code);
   });
 

@@ -168,6 +168,24 @@ video, #reader {
   transition: opacity 0.15s ease;
 }
 
+#flashOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--accent-2);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#flashOverlay.flash {
+  animation: scan-flash 0.35s ease-out;
+}
+
+@keyframes scan-flash {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
 .big-count {
   font-size: 42px;
   font-weight: 700;
