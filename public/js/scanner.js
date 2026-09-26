@@ -16,13 +16,12 @@
   let html5Qr = null;
   let sent = 0;
 
-  // Anti-Spam-Puffer: verhindert, dass derselbe Code mehrfach pro Sekunde
-  // gesendet wird, waehrend das Handy ruhig ueber dem Barcode gehalten wird.
-  let lastText = null;
-  let lastSentAt = 0;
-  let missCount = 0;
-  const MIN_COOLDOWN_MS = 800; // Mindestabstand, bevor derselbe Code erneut zaehlt
-  const CLEAR_AFTER_MISSES = 4; // so viele Frames ohne Erkennung = Code "aus dem Bild"
+  // Anti-Spam-Puffer: nach jedem erfolgreichen Scan wird 2 Sekunden lang gar
+  // nichts mehr erkannt (egal ob gleicher oder anderer Code), damit nicht
+  // aus Versehen mehrfach gesendet wird, waehrend das Handy noch ruhig
+  // gehalten wird.
+  let pausedUntil = 0;
+  const SCAN_PAUSE_MS = 2000;
 
   function connectAndJoin(code) {
     joinCard.style.display = 'none';
@@ -86,25 +85,15 @@
       });
   }
 
-  // Wird pro Kamera-Frame ohne erkannten Code aufgerufen. Sobald der Barcode
-  // eine Weile nicht mehr im Bild war, gilt er als "verlassen" und darf beim
-  // naechsten Erkennen sofort wieder gesendet werden (z. B. gleicher Artikel
-  // zweimal hintereinander).
   function onScanFailure() {
-    missCount += 1;
-    if (missCount >= CLEAR_AFTER_MISSES) {
-      lastText = null;
-    }
+    // Kein erkannter Code in diesem Frame - nichts zu tun, die Pause laeuft
+    // unabhaengig davon einfach per Zeitstempel weiter.
   }
 
   function onScanSuccess(decodedText, result) {
-    missCount = 0;
     const now = Date.now();
-    const sameCodeStillInView = decodedText === lastText && now - lastSentAt < MIN_COOLDOWN_MS;
-    if (sameCodeStillInView) return;
-
-    lastText = decodedText;
-    lastSentAt = now;
+    if (now < pausedUntil) return;
+    pausedUntil = now + SCAN_PAUSE_MS;
 
     const format = result?.result?.format?.formatName || 'UNKNOWN';
     socket.emit('barcode', { text: decodedText, format });
@@ -113,7 +102,12 @@
     sentCount.textContent = String(sent);
     lastScan.textContent = `${decodedText} (${format})`;
 
-    if (navigator.vibrate) navigator.vibrate(80);
+    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+
+    document.getElementById('reader').classList.add('scan-pause');
+    setTimeout(() => {
+      document.getElementById('reader').classList.remove('scan-pause');
+    }, SCAN_PAUSE_MS);
   }
 
   joinBtn.addEventListener('click', () => {
