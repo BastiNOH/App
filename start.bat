@@ -2,17 +2,15 @@
 title Barcode Bridge
 cd /d "%~dp0"
 
-if not exist node_modules (
-  echo Installiere Abhaengigkeiten, bitte kurz warten...
-  call npm install
-  if errorlevel 1 (
-    echo.
-    echo Installation fehlgeschlagen. Bitte obige Fehlermeldung pruefen.
-    pause
-    exit /b 1
-  )
+echo Pruefe Abhaengigkeiten (installiert nur, was fehlt/neu ist)...
+call npm install
+if errorlevel 1 (
   echo.
+  echo Installation fehlgeschlagen. Bitte obige Fehlermeldung pruefen.
+  pause
+  exit /b 1
 )
+echo.
 
 echo Starte Barcode-Bridge-Server...
 echo Der Browser oeffnet sich gleich automatisch. Dieses Fenster bitte offen lassen,

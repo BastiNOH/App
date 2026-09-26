@@ -9,6 +9,11 @@
 let nut = null;
 try {
   nut = require('@nut-tree-fork/nut-js');
+  // nut-js verzoegert standardmaessig jeden Tastendruck um 300ms (fuer
+  // Kompatibilitaet gedacht) - bei einem 13-stelligen Barcode macht das
+  // ueber 4 Sekunden. Ein echter USB-Scanner tippt praktisch instantan,
+  // daher hier auf minimale Verzoegerung stellen.
+  nut.keyboard.config.autoDelayMs = 0;
 } catch (err) {
   process.send({ type: 'unavailable', reason: err.message });
   process.exit(0);
