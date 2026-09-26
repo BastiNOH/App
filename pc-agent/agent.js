@@ -38,7 +38,6 @@ async function main() {
 
   const socket = io(args.url, {
     rejectUnauthorized: !args.insecure,
-    transports: ['websocket', 'polling'],
   });
 
   socket.on('connect', () => {
@@ -95,6 +94,13 @@ async function main() {
 
   socket.on('connect_error', (err) => {
     console.error('Verbindungsfehler:', err.message);
+    if (err.description) {
+      const desc = err.description;
+      console.error('Details:', typeof desc === 'object' ? (desc.message || desc.code || JSON.stringify(desc)) : desc);
+    }
+    if (err.context && err.context.message) {
+      console.error('Kontext:', err.context.message);
+    }
     if (!args.insecure && args.url.startsWith('https://')) {
       console.error('Tipp: Bei selbstsigniertem Zertifikat ggf. --insecure verwenden.');
     }
