@@ -39,6 +39,12 @@
         <input type="checkbox" id="autoEnter" checked style="width:auto;" /> Enter-Taste nach jedem Scan simulieren
       </label>
     </div>
+    <div class="row" style="margin-top:10px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text);">
+        <input type="checkbox" id="systemType" style="width:auto;" /> Auch systemweit in die aktive Anwendung tippen (auf diesem PC)
+      </label>
+    </div>
+    <div class="hint" id="systemTypeHint" style="margin-top:6px;"></div>
   </div>
 
   <div class="card">
@@ -56,8 +62,9 @@
   </div>
 
   <div class="hint">
-    Für systemweites Eintippen in jede beliebige Anwendung (statt nur in dieses Feld) kann optional der
-    <code>pc-agent</code> aus dem Projekt-Repo lokal gestartet werden. Details siehe README.
+    Der Schalter "systemweit tippen" oben tippt Scans direkt in die gerade aktive Anwendung
+    <strong>auf diesem PC</strong> (dem, auf dem dieser Server läuft) – wie ein echter USB-Scanner.
+    Soll stattdessen ein <em>anderer</em> PC die Codes bekommen, siehe <code>pc-agent/</code> im Projekt-Repo.
   </div>
 </div>
 

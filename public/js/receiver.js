@@ -13,6 +13,8 @@
   const logBody = document.getElementById('logBody');
   const copyLastBtn = document.getElementById('copyLastBtn');
   const clearBtn = document.getElementById('clearBtn');
+  const systemType = document.getElementById('systemType');
+  const systemTypeHint = document.getElementById('systemTypeHint');
 
   let history = [];
   let currentCode = null;
@@ -74,6 +76,26 @@
       dotPhone.classList.remove('on');
       phoneText.textContent = 'Kein Handy verbunden';
     }
+  });
+
+  socket.on('system-type-status', (status) => {
+    if (!status.available) {
+      systemType.checked = false;
+      systemType.disabled = true;
+      systemTypeHint.textContent =
+        'Nicht verfügbar auf diesem PC. Für systemweites Tippen bitte im Hauptordner ' +
+        '"npm install @nut-tree-fork/nut-js" ausführen und den Server neu starten.';
+      return;
+    }
+    systemType.disabled = false;
+    if (typeof status.enabled === 'boolean') systemType.checked = status.enabled;
+    systemTypeHint.textContent = systemType.checked
+      ? 'Aktiv: Scans werden gerade in die aktive Anwendung auf diesem PC getippt.'
+      : 'Verfügbar – Häkchen setzen, um Scans systemweit zu tippen.';
+  });
+
+  systemType.addEventListener('change', () => {
+    socket.emit('set-system-type', { enabled: systemType.checked });
   });
 
   socket.on('barcode', (payload) => {

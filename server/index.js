@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const express = require('express');
 const { Server } = require('socket.io');
 const QRCode = require('qrcode');
+const systemTypist = require('./system-typist');
 
 const PORT = parseInt(process.env.PORT || '3443', 10);
 const USE_HTTP = process.env.HTTP_ONLY === '1';
@@ -75,7 +76,13 @@ function touchRoom(code) {
 function getOrCreateRoom(code) {
   let room = rooms.get(code);
   if (!room) {
-    room = { createdAt: Date.now(), lastActivity: Date.now(), receivers: new Set(), scanners: new Set() };
+    room = {
+      createdAt: Date.now(),
+      lastActivity: Date.now(),
+      receivers: new Set(),
+      scanners: new Set(),
+      systemTypeEnabled: false,
+    };
     rooms.set(code, room);
   }
   return room;
@@ -140,10 +147,19 @@ if (USE_HTTP) {
 
 const io = new Server(server, { cors: { origin: '*' } });
 
+systemTypist.onStatusChange(() => {
+  // Betrifft alle Raeume gleich (ein Tipp-Prozess pro Server), daher an alle
+  // verbundenen Sockets broadcasten; nicht-Receiver ignorieren den Event.
+  io.emit('system-type-status', {
+    available: systemTypist.isAvailable(),
+    unavailableReason: systemTypist.unavailableReason(),
+  });
+});
+
 io.on('connection', (socket) => {
   let joined = null; // { code, role }
 
-  socket.on('join-room', ({ code, role }) => {
+  socket.on('join-room', async ({ code, role }) => {
     if (typeof code !== 'string' || !/^[A-Z0-9]{4,8}$/.test(code)) {
       socket.emit('join-error', { message: 'Ungueltiger Raumcode' });
       return;
@@ -168,6 +184,29 @@ io.on('connection', (socket) => {
       receivers: room.receivers.size,
       scanners: room.scanners.size,
     });
+
+    if (role === 'receiver') {
+      // Kurz warten, falls der Kindprozess fuer systemweites Tippen beim
+      // allerersten Verbinden noch nicht gemeldet hat, ob er verfuegbar ist.
+      await systemTypist.waitUntilReady();
+      socket.emit('system-type-status', {
+        available: systemTypist.isAvailable(),
+        unavailableReason: systemTypist.unavailableReason(),
+        enabled: room.systemTypeEnabled,
+      });
+    }
+  });
+
+  socket.on('set-system-type', ({ enabled }) => {
+    if (!joined || joined.role !== 'receiver') return;
+    const room = touchRoom(joined.code);
+    if (!room) return;
+    room.systemTypeEnabled = !!enabled && systemTypist.isAvailable();
+    io.to(`room:${joined.code}`).emit('system-type-status', {
+      available: systemTypist.isAvailable(),
+      unavailableReason: systemTypist.unavailableReason(),
+      enabled: room.systemTypeEnabled,
+    });
   });
 
   socket.on('barcode', (payload) => {
@@ -182,6 +221,10 @@ io.on('connection', (socket) => {
       format,
       ts: Date.now(),
     });
+
+    if (room.systemTypeEnabled) {
+      systemTypist.typeText(text, true);
+    }
   });
 
   socket.on('disconnect', () => {

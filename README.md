@@ -16,8 +16,9 @@ installierbare PWA), der PC empfängt die Scans in Echtzeit über das lokale WLA
 2. PC und Handy koppeln sich über einen 6-stelligen Raumcode (per QR-Code oder manueller Eingabe).
 3. Jeder gescannte Code wird sofort per WebSocket an den PC gesendet und dort:
    - in ein Eingabefeld der Empfänger-Seite eingetragen (inkl. simulierter Enter-Taste), und/oder
-   - über den optionalen **PC-Agent** systemweit in die gerade aktive Anwendung getippt – genau wie ein
-     echter USB-Barcode-Scanner.
+   - bei aktiviertem Schalter "systemweit tippen" **direkt vom Server selbst** in die gerade aktive
+     Anwendung auf diesem PC getippt – genau wie ein echter USB-Barcode-Scanner, ganz ohne zweiten
+     Prozess oder manuelle Konfiguration.
 
 ## Voraussetzungen
 
@@ -26,6 +27,17 @@ installierbare PWA), der PC empfängt die Scans in Echtzeit über das lokale WLA
 - Android-Handy mit Chrome (getestet für Chrome; andere moderne Android-Browser sollten ebenfalls funktionieren)
 
 ## Start
+
+### Windows: einfach `start.bat` doppelklicken
+
+Im Projektordner die Datei **`start.bat`** doppelklicken. Beim ersten Mal installiert sie
+automatisch alle Abhängigkeiten (dauert etwas), startet danach den Server und öffnet den
+Browser automatisch auf der Empfänger-Seite. Das Konsolenfenster muss offen bleiben,
+solange die App läuft – schließen beendet den Server. Für einen schnellen Zugriff kannst du
+dir eine Verknüpfung von `start.bat` auf den Desktop legen (Rechtsklick → Senden an →
+Desktop (Verknüpfung erstellen)).
+
+### Alternativ manuell (Windows/Mac/Linux)
 
 ```bash
 npm install
@@ -64,35 +76,47 @@ Die Scanner-Seite ist eine PWA (`manifest.json`) und kann auf Android über
 QR-Code, EAN-13, EAN-8, UPC-A, UPC-E, Code 128, Code 39, Code 93, Codabar, ITF, Data Matrix
 (via [html5-qrcode](https://github.com/mebjas/html5-qrcode)).
 
-## Optional: Systemweites Eintippen (PC-Agent)
+## Systemweites Eintippen in andere Programme
 
-Standardmäßig landen Scans nur im Eingabefeld der Empfänger-Webseite. Wer die Codes wie bei
-einem echten USB-Scanner **in jede beliebige Anwendung** (Excel, Warenwirtschaft, Kassensystem, …)
-eintippen lassen möchte, kann zusätzlich den PC-Agent lokal starten:
+Standardmäßig landen Scans nur im Eingabefeld der Empfänger-Webseite. Auf der Empfänger-Seite
+gibt es zusätzlich den Schalter **"Auch systemweit in die aktive Anwendung tippen"** – einmal
+aktiviert, tippt der Server jeden Scan direkt in das Fenster, das auf **diesem PC** gerade den
+Fokus hat (Excel, Warenwirtschaft, Kassensystem, …), inklusive Enter-Taste, genau wie ein echter
+USB-Barcode-Scanner. Kein zweiter Prozess, kein Raumcode manuell eintippen – einfach Häkchen
+setzen.
+
+Dafür wird beim `npm install` automatisch versucht,
+[`@nut-tree-fork/nut-js`](https://github.com/nut-tree-fork/nut.js) mitzuinstallieren (steht als
+optionale Abhängigkeit in `package.json`). Klappt das auf einem System nicht (z. B. weil kein
+natives Modul für die Plattform verfügbar ist), bleibt der Schalter einfach ausgegraut mit einem
+Hinweistext – der Rest der App läuft trotzdem normal.
+
+### Falls die Codes auf einem *anderen* PC getippt werden sollen (PC-Agent)
+
+Der eingebaute Schalter tippt immer auf dem PC, auf dem der Server läuft. Soll stattdessen ein
+**anderer** Rechner die Tastatureingaben bekommen (Server läuft z. B. auf PC A, getippt werden
+soll auf PC B), gibt es dafür den separaten `pc-agent/`:
 
 ```bash
 cd pc-agent
 npm install
-node agent.js --url https://localhost:3443 --room ABCD12 --insecure
+node agent.js --url https://<Server-IP>:3443 --room ABCD12 --insecure
 ```
 
-- `--room` ist der auf der Empfänger-Seite angezeigte Code (derselbe Raum wie der Browser-Receiver;
-  beide können parallel verbunden sein).
+- `--room` ist der auf der Empfänger-Seite angezeigte Code.
 - `--insecure` wird benötigt, weil das Server-Zertifikat selbstsigniert ist.
 - `--no-enter` unterdrückt die simulierte Enter-Taste nach jedem Scan.
-
-Der Agent nutzt [`@nut-tree/nut-js`](https://github.com/nut-tree/nut.js) zur Tastatur-Simulation
-und muss **auf dem PC selbst** installiert/ausgeführt werden (nicht in dieser Cloud-Umgebung –
-hier gibt es keinen Desktop, an den getippt werden könnte).
 
 ## Architektur / Dateien
 
 ```
-server/index.js        Express + Socket.IO Server, Raum-Pairing, Zertifikat, QR-Erzeugung
+start.bat               Windows-Doppelklick-Start (Installation + Server + Browser)
+server/index.js         Express + Socket.IO Server, Raum-Pairing, Zertifikat, QR-Erzeugung
+server/system-typist.js Systemweites Tippen (nut.js), optional & mit eigener Warteschlange
 server/test/relay.test.js  Automatisierter Test der Pairing-/Relay-Logik
 public/receiver.html/js Empfänger-Oberfläche für den PC-Browser
 public/scanner.html/js  Scanner-Oberfläche fürs Handy (Kamera via html5-qrcode)
-pc-agent/agent.js       Optionaler Agent für systemweite Tastatureingabe
+pc-agent/agent.js       Agent für systemweite Tastatureingabe auf einem ANDEREN PC
 ```
 
 ## Getestet vs. nicht getestet
